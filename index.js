@@ -78,10 +78,10 @@ app.delete("/usuarios/:id", (req, res) => {
 app.post("/usuarios", (req, res) => {
     try {
         console.log("Chamou post", req.body);
-        const { nome, senha, telefone } = req.body;
+        const { nome, senha, telefone, email } = req.body;
         client.query(
-            "INSERT INTO Usuarios (nome, senha, telefone) VALUES ($1, $2, $3) RETURNING * ",
-            [nome, senha, telefone],
+            "INSERT INTO Usuarios (nome, senha, telefone, email) VALUES ($1, $2, $3, $4) RETURNING * ",
+            [nome, senha, telefone, email],
             function (err, result) {
                 if (err) {
                     return console.error("Erro ao executar a qry de INSERT", err);
@@ -177,5 +177,28 @@ app.get("/pedidos/:id", (req, res) => {
     }
 });
 
+app.get("/autenticar", (req, res) => {
+    try {
+        console.log("Chamou /autenticar");
+        const email = req.query.email;
+        const senha = req.query.senha;
+        client.query(
+            "SELECT * FROM usuarios WHERE email = $1 AND senha = $2",
+            [email, senha],
+            function (err, result) {
+                if (err) {
+                    return console.error("Erro ao executar a qry de SELECT email e senha", err);
+                }
+                if (result.rows.length > 0) {
+                    res.send("Usuário autenticado!");
+                } else {
+                    res.send("Usuário não tem acesso.");
+                }
+            }
+        );
+    } catch (error) {
+        console.log(error);
+    }
+});
 
 module.exports = app;
