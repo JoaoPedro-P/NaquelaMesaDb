@@ -31,21 +31,6 @@ app.listen(config.port, () =>
     console.log("Servidor funcionando na porta " + config.port)
 );
 
-app.get("/usuarios", (req, res) => {
-    try {
-        client.query("SELECT * FROM usuarios", function
-            (err, result) {
-            if (err) {
-                return console.error("Erro ao executar a qry de SELECT", err);
-            }
-            res.send(result.rows);
-            console.log("Chamou get usuarios");
-        });
-    } catch (error) {
-        console.log(error);
-    }
-});
-
 app.get("/usuarios/:id", (req, res) => {
     try {
         console.log("Chamou /:id " + req.params.id);
@@ -109,6 +94,86 @@ app.post("/usuarios", (req, res) => {
         );
     } catch (erro) {
         console.error(erro);
+    }
+});
+
+app.put("/usuarios/:id", (req, res) => {
+    try {
+        console.log("Chamou update", req.body);
+        const id = req.params.id;
+        const { nome, senha, telefone } = req.body;
+        client.query(
+            "UPDATE Usuarios SET nome=$1, senha=$2, telefone=$3 WHERE id =$4 ",
+            [nome, senha, telefone, id],
+            function (err, result) {
+                if (err) {
+                    return console.error("Erro ao executar a qry de UPDATE", err);
+                } else {
+                    res.setHeader("id", id);
+                    res.status(202).json({ id: id });
+                    console.log(result);
+                }
+            }
+        );
+    } catch (erro) {
+        console.error(erro);
+    }
+});
+
+
+app.post("/pedidos", (req, res) => {
+    try {
+        console.log("Chamou post", req.body);
+        const { preco_final, pratos_pedidos, usuario_id } = req.body;
+        client.query(
+            "INSERT INTO pedidos (preco_final, pratos_pedidos, usuario_id) VALUES ($1, $2, $3) RETURNING * ",
+            [preco_final, pratos_pedidos, usuario_id],
+            function (err, result) {
+                if (err) {
+                    return console.error("Erro ao executar a qry de INSERT", err);
+                }
+                const { id } = result.rows[0];
+                res.setHeader("id", `${id}`);
+                res.status(201).json(result.rows[0]);
+                console.log(result);
+            }
+        );
+    } catch (erro) {
+        console.error(erro);
+    }
+});
+
+app.get("/pedidos", (req, res) => {
+    try {
+        client.query("SELECT * FROM pedidos", function
+            (err, result) {
+            if (err) {
+                return console.error("Erro ao executar a qry de SELECT", err);
+            }
+            res.send(result.rows);
+            console.log("Chamou get pedidos");
+        });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
+app.get("/pedidos/:id", (req, res) => {
+    try {
+        console.log("Chamou /:id " + req.params.id);
+        client.query(
+            "SELECT * FROM pedidos WHERE id = $1",
+            [req.params.id],
+            function (err, result) {
+                if (err) {
+                    return console.error("Erro ao executar a qry de SELECT id", err);
+                }
+                res.send(result.rows);
+                //console.log(result);
+            }
+        );
+    } catch (error) {
+        console.log(error);
     }
 });
 
