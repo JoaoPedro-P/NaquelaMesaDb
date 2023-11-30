@@ -31,25 +31,6 @@ app.listen(config.port, () =>
     console.log("Servidor funcionando na porta " + config.port)
 );
 
-app.get("/usuarios/:id", (req, res) => {
-    try {
-        console.log("Chamou /:id " + req.params.id);
-        client.query(
-            "SELECT * FROM Usuarios WHERE id = $1",
-            [req.params.id],
-            function (err, result) {
-                if (err) {
-                    return console.error("Erro ao executar a qry de SELECT id", err);
-                }
-                res.send(result.rows);
-                //console.log(result);
-            }
-        );
-    } catch (error) {
-        console.log(error);
-    }
-});
-
 app.delete("/usuarios/:id", (req, res) => {
     try {
         console.log("Chamou delete /:id " + req.params.id);
@@ -190,7 +171,13 @@ app.get("/autenticar", (req, res) => {
                     return console.error("Erro ao executar a qry de SELECT email e senha", err);
                 }
                 if (result.rows.length > 0) {
-                    res.send("Usuário autenticado!");
+                    // Agora, o endpoint retorna o nome, email, telefone e id do usuário autenticado
+                    res.send({
+                        id: result.rows[0].id,
+                        nome: result.rows[0].nome,
+                        email: result.rows[0].email,
+                        telefone: result.rows[0].telefone
+                    });
                 } else {
                     res.send("Usuário não tem acesso.");
                 }
@@ -200,5 +187,6 @@ app.get("/autenticar", (req, res) => {
         console.log(error);
     }
 });
+
 
 module.exports = app;
