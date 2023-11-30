@@ -179,7 +179,7 @@ app.get("/autenticar", (req, res) => {
                         telefone: result.rows[0].telefone
                     });
                 } else {
-                    res.send("Usuário não tem acesso.");
+                    res.send({ message: "Usuário não tem acesso." });
                 }
             }
         );
