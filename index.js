@@ -139,6 +139,21 @@ app.get("/pedidos", (req, res) => {
     }
 });
 
+app.get("/pratos", (req, res) => {
+    try {
+        client.query("SELECT * FROM pratos", function
+            (err, result) {
+            if (err) {
+                return console.error("Erro ao executar a qry de SELECT", err);
+            }
+            res.send(result.rows);
+            console.log("Chamou get pedidos");
+        });
+    } catch (error) {
+        console.log(error);
+    }
+});
+
 app.get("/pedidos/:id", (req, res) => {
     try {
         console.log("Chamou /:id " + req.params.id);
