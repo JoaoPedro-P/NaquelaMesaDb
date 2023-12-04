@@ -78,64 +78,44 @@ app.post("/usuarios", (req, res) => {
     }
 });
 
-app.put("/usuarios/:id", (req, res) => {
-    try {
-        console.log("Chamou update", req.body);
-        const id = req.params.id;
-        const { nome, senha, telefone } = req.body;
-        client.query(
-            "UPDATE Usuarios SET nome=$1, senha=$2, telefone=$3 WHERE id =$4 ",
-            [nome, senha, telefone, id],
-            function (err, result) {
-                if (err) {
-                    return console.error("Erro ao executar a qry de UPDATE", err);
-                } else {
-                    res.setHeader("id", id);
-                    res.status(202).json({ id: id });
-                    console.log(result);
-                }
-            }
-        );
-    } catch (erro) {
-        console.error(erro);
-    }
-});
-
-
 app.post("/pedidos", (req, res) => {
     try {
         console.log("Chamou post", req.body);
         const { preco_final, pratos_pedidos, usuario_id } = req.body;
+
+        // Primeiro, inserimos na tabela 'pedidos'
         client.query(
-            "INSERT INTO pedidos (preco_final, pratos_pedidos, usuario_id) VALUES ($1, $2, $3) RETURNING * ",
-            [preco_final, pratos_pedidos, usuario_id],
+            "INSERT INTO pedidos (preco_final, usuario_id) VALUES ($1, $2) RETURNING id",
+            [preco_final, usuario_id],
             function (err, result) {
                 if (err) {
-                    return console.error("Erro ao executar a qry de INSERT", err);
+                    return console.error("Erro ao executar a qry de INSERT em pedidos", err);
                 }
-                const { id } = result.rows[0];
-                res.setHeader("id", `${id}`);
-                res.status(201).json(result.rows[0]);
-                console.log(result);
+
+                const pedidoId = result.rows[0].id;
+
+                // Agora, para cada prato, inserimos na tabela 'pedido_prato'
+                pratos_pedidos.forEach((prato) => {
+                    const { id_prato, quantidade } = prato;
+
+                    client.query(
+                        "INSERT INTO pedido_prato (id_pedido, id_prato, quantidade) VALUES ($1, $2, $3)",
+                        [pedidoId, id_prato, quantidade],
+                        function (err) {
+                            if (err) {
+                                return console.error("Erro ao executar a qry de INSERT em pedido_prato", err);
+                            }
+                        }
+                    );
+                });
+
+                res.setHeader("id", `${pedidoId}`);
+                res.status(201).json({ id: pedidoId });
             }
         );
     } catch (erro) {
         console.error(erro);
-    }
-});
-
-app.get("/pedidos", (req, res) => {
-    try {
-        client.query("SELECT * FROM pedidos", function
-            (err, result) {
-            if (err) {
-                return console.error("Erro ao executar a qry de SELECT", err);
-            }
-            res.send(result.rows);
-            console.log("Chamou get pedidos");
-        });
-    } catch (error) {
-        console.log(error);
+        res.status(500).send("Erro interno do servidor");
     }
 });
 
