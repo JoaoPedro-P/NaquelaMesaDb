@@ -81,19 +81,19 @@ app.post("/usuarios", (req, res) => {
 app.post("/pedidos", (req, res) => {
     try {
         console.log("Chamou post", req.body);
-        const { preco_final, pratos_pedidos, usuario_id } = req.body;
+        const { preco_final, pratos_pedidos, id_usuario } = req.body;
 
         // Primeiro, inserimos na tabela 'pedidos'
         client.query(
-            "INSERT INTO pedidos (preco_final, usuario_id) VALUES ($1, $2) RETURNING id",
-            [preco_final, usuario_id],
+            "INSERT INTO pedidos (preco_final, id_usuario) VALUES ($1, $2) RETURNING id_pedido",
+            [preco_final, id_usuario],
             function (err, result) {
                 if (err) {
                     return console.error("Erro ao executar a qry de INSERT em pedidos", err);
                 }
-
-                const pedidoId = result.rows[0].id;
-
+                console.log(result.rows[0]);
+                const pedidoId = result.rows[0].id_pedido;
+                
                 // Agora, para cada prato, inserimos na tabela 'pedido_prato'
                 pratos_pedidos.forEach((prato) => {
                     const { id_prato, quantidade } = prato;
