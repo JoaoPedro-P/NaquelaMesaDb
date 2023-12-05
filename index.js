@@ -3,14 +3,19 @@ const { Client } = require('pg');
 const cors = require("cors");
 const bodyparser = require("body-parser");
 const config = require("./config");
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(bodyparser.json());
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 
 var conString = config.urlConnection;
 var client = new Client(conString);
+
 client.connect(function (err) {
     if (err) {
         return console.error('Não foi possível conectar ao banco.', err);
@@ -23,6 +28,17 @@ client.connect(function (err) {
     });
 });
 
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Endpoint de teste para conexão do servidor
+ *     description: Apenas para teste
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ */
+
 app.get("/", (req, res) => {
     console.log("Response ok.");
     res.send("Ok - Servidor disponível.");
@@ -31,6 +47,22 @@ app.listen(config.port, () =>
     console.log("Servidor funcionando na porta " + config.port)
 );
 
+
+/**
+ * @swagger
+ * /usuarios/{id}:
+ *   delete:
+ *     parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        description: ID do usuário a ser excluído
+ *     summary: Endpoint para remoção de usuários
+ *     description: Este endpoint é responsável por excluir do banco de dados o usuário com id informado
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ */
 app.delete("/usuarios/:id", (req, res) => {
     try {
         console.log("Chamou delete /:id " + req.params.id);
@@ -56,6 +88,40 @@ app.delete("/usuarios/:id", (req, res) => {
     }
 });
 
+
+/**
+ * @swagger
+ * /usuarios:
+ *   post:
+ *     summary: Endpoint para criação de usuários
+ *     description: Este endpoint é responsável por criar no banco de dados os usuários.
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *                 description: O nome do usuário.
+ *                 example: Leanne Graham
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: O endereço de e-mail do usuário.
+ *                 example: user@example.com
+ *               senha:
+ *                 type: string
+ *                 description: A senha do usuário.
+ *                 example: mypassword
+ *               telefone:
+ *                 type: string
+ *                 description: O número de telefone do usuário.
+ *                 example: "+55 11 1234-5678"
+ *     responses:
+ *       201:
+ *         description: Criado
+ */
 app.post("/usuarios", (req, res) => {
     try {
         console.log("Chamou post", req.body);
@@ -78,6 +144,44 @@ app.post("/usuarios", (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /pratos:
+ *   post:
+ *     summary: Endpoint para criação de pratos
+ *     description: Este endpoint é responsável por criar no banco de dados os pratos da aplicação.
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id_usuario:
+ *                 type: string
+ *                 description: id do usuário que fez o pedido.
+ *                 example: 2
+ *               pratos_pedidos:
+ *                 type: array
+ *                 description: Vetor dos pratos pedidos
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     id_prato:
+ *                       type: string
+ *                       description: ID do prato.
+ *                       example: 1
+ *                     quantidade:
+ *                       type: integer
+ *                       description: Quantidade do prato.
+ *                       example: 2
+ *               preco_final:
+ *                 type: integer
+ *                 description: Valor final do pedido
+ *                 example: 175
+ *     responses:
+ *       201:
+ *         description: Criado
+ */
 app.post("/pedidos", (req, res) => {
     try {
         console.log("Chamou post", req.body);
@@ -93,7 +197,7 @@ app.post("/pedidos", (req, res) => {
                 }
                 console.log(result.rows[0]);
                 const pedidoId = result.rows[0].id_pedido;
-                
+
                 // Agora, para cada prato, inserimos na tabela 'pedido_prato'
                 pratos_pedidos.forEach((prato) => {
                     const { id_prato, quantidade } = prato;
@@ -119,6 +223,17 @@ app.post("/pedidos", (req, res) => {
     }
 });
 
+
+/**
+ * @swagger
+ * /pratos:
+ *   get:
+ *     summary: Endpoint para mostrar todos os pratos
+ *     description: Este endpoint é responsável por buscar do banco de dados todos os pratos.
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ */
 app.get("/pratos", (req, res) => {
     try {
         client.query("SELECT * FROM pratos", function
@@ -134,25 +249,34 @@ app.get("/pratos", (req, res) => {
     }
 });
 
-app.get("/pedidos/:id", (req, res) => {
-    try {
-        console.log("Chamou /:id " + req.params.id);
-        client.query(
-            "SELECT * FROM pedidos WHERE id = $1",
-            [req.params.id],
-            function (err, result) {
-                if (err) {
-                    return console.error("Erro ao executar a qry de SELECT id", err);
-                }
-                res.send(result.rows);
-                //console.log(result);
-            }
-        );
-    } catch (error) {
-        console.log(error);
-    }
-});
 
+/**
+ * @swagger
+ * /autenticar:
+ *   get:
+ *     summary: Endpoint para autenticar um usuário
+ *     description: |
+ *       Este endpoint é responsável por autenticar um usuário a partir do email e da senha.
+ *       Os parâmetros de consulta (query parameters) email e senha devem ser fornecidos.
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: O endereço de e-mail do usuário.
+ *         example: user@example.com
+ *       - in: query
+ *         name: senha
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: A senha do usuário.
+ *         example: mypassword
+ *     responses:
+ *       200:
+ *         description: Sucesso
+ */
 app.get("/autenticar", (req, res) => {
     try {
         console.log("Chamou /autenticar");
